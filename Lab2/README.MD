@@ -32,22 +32,20 @@ The order was successfuly placed. The Rabbit mq server was running on vm 1, the 
 
 ### Product Service (Rust)
 
-[Your explanation here - 1-2 paragraphs]
+Product service was running on its own vm through its own repo at the following: https://github.com/uiqbal12/product-service-lab2
 
-### Store Front (Vue.js)
+![](/screenshotslab2/product-service-running-own-vm.png)
 
-[Your explanation here - 1-2 paragraphs]
+The rabbit mq was set up at the very beginning on the very first vm 
+
+![](/screenshotslab2/rabbit-mq-as-backing-servicepng.png)
 
 
 ---
 
 ## Challenges and Learnings (Optional)
 
-[Share any interesting challenges you faced during setup, how you solved them,
-and what you learned from this lab experience]
+Many hurdles experienced. Azure portal would glitch out repeatedly not assigning a public ip. Once a public ip was assigned, ssh would not work sometimes. Once a separate repo was set up for each service and it was deployed from its own vm. There would be clashes with the node modules and it would need to be refreshed. Once the node modules or rust modules were refreshed, it was then able to run the application and if the environment variables were configured correctly, it would be able to communicate with the different service running on a different vm. Overall, even though the lab took me close to 6 hours to complete, it was a lot of fun to complete and I learned a lot. 
 
 ---
 
-## Acknowledgments
-
-[Optional: Credit any resources, documentation, or people who helped you]
