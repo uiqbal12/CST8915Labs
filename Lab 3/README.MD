@@ -1,4 +1,4 @@
-# CST8915 Lab 1: Algonquin Pet Store on Azure VM
+# CST8915 Lab 3: Algonquin Pet Store on Azure VM
 
 **Student Name**: Usama Iqbal 
 **Student ID**: 040777763
