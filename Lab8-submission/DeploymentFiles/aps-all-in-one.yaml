@@ -5,7 +5,7 @@ metadata:
   name: mongodb
 spec:
   serviceName: mongodb # Associated headless service for DNS resolution
-  replicas: 3 # Number of MongoDB replicas
+  replicas: 1 # Number of MongoDB replicas
   selector:
     matchLabels:
       app: mongodb # Labels to match for this StatefulSet
@@ -19,13 +19,9 @@ spec:
       containers:
         - name: mongodb
           image: mongo:4.2 # MongoDB container image version
-          command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
           ports:
             - containerPort: 27017 # Default MongoDB port
               name: mongodb
-          volumeMounts:
-            - name: mongodb-data
-              mountPath: /data/db
           resources: # Resource requests and limits for MongoDB
             requests:
               cpu: 5m # Minimum CPU
@@ -36,19 +32,11 @@ spec:
           livenessProbe: # Probe to check MongoDB health
             exec:
               command:
-                - mongo
+                - mongosh
                 - --eval
                 - db.runCommand('ping').ok
-            initialDelaySeconds: 60
-            periodSeconds: 10
-  volumeClaimTemplates:   # ✅ CHANGE: added PVC for each pod
-    - metadata:
-        name: mongodb-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 1Gi
+            initialDelaySeconds: 5 # Wait time before starting probe
+            periodSeconds: 5 # Interval between probes
 ---
 # Service to expose MongoDB
 apiVersion: v1
@@ -56,11 +44,11 @@ kind: Service
 metadata:
   name: mongodb
 spec:
-  clusterIP: None
   ports:
     - port: 27017 # MongoDB service port
   selector:
     app: mongodb # Target pods with label `app: mongodb`
+  type: ClusterIP # Internal cluster service
 ---
 # StatefulSet for RabbitMQ
 apiVersion: apps/v1
@@ -68,8 +56,8 @@ kind: StatefulSet
 metadata:
   name: rabbitmq
 spec:
-  serviceName: rabbitmq
-  replicas: 1
+  serviceName: rabbitmq # Headless service for RabbitMQ
+  replicas: 1 # Single replica
   selector:
     matchLabels:
       app: rabbitmq
@@ -82,30 +70,28 @@ spec:
         "kubernetes.io/os": linux
       containers:
         - name: rabbitmq
-          image: rabbitmq:3-management
+          image: rabbitmq:3-management # RabbitMQ image with management UI
           ports:
-            - containerPort: 5672
+            - containerPort: 5672 # AMQP protocol port
               name: rabbitmq-amqp
-            - containerPort: 15672
+            - containerPort: 15672 # HTTP management UI port
               name: rabbitmq-http
-          env:
+          env: # Environment variables for RabbitMQ
             - name: RABBITMQ_DEFAULT_USER
-              value: "username"
+              value: "username" # Default username
             - name: RABBITMQ_DEFAULT_PASS
-              value: "password"
-          volumeMounts:
-            - name: rabbitmq-enabled-plugins
-              mountPath: /etc/rabbitmq/enabled_plugins
-              subPath: enabled_plugins
-            - name: rabbitmq-data
-              mountPath: /var/lib/rabbitmq   # ✅ CHANGE: persistent storage
-          resources:
+              value: "password" # Default password
+          resources: # Resource limits and requests
             requests:
               cpu: 10m
               memory: 128Mi
             limits:
               cpu: 250m
               memory: 256Mi
+          volumeMounts: # Mount configuration for RabbitMQ plugins
+            - name: rabbitmq-enabled-plugins
+              mountPath: /etc/rabbitmq/enabled_plugins
+              subPath: enabled_plugins
       volumes:
         - name: rabbitmq-enabled-plugins
           configMap:
@@ -113,17 +99,8 @@ spec:
             items:
               - key: rabbitmq_enabled_plugins
                 path: enabled_plugins
-  volumeClaimTemplates:   # ✅ CHANGE: added PVC
-    - metadata:
-        name: rabbitmq-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 1Gi
-
 ---
-# RabbitMQ Service (UNCHANGED)
+# Service for RabbitMQ
 apiVersion: v1
 kind: Service
 metadata:
@@ -139,7 +116,6 @@ spec:
       port: 15672
       targetPort: 15672
   type: ClusterIP
-
 ---
 # Deployment for Order Service
 apiVersion: apps/v1
